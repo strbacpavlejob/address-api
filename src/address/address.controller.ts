@@ -1,4 +1,5 @@
 import {
+  All,
   Body,
   Controller,
   Delete,
@@ -30,22 +31,19 @@ export class AddressController {
   }
 
   @Post()
-  async createAddress(
-    @Body() createAddressDto: CreateAddressDto,
-    @Res() res: Response,
-  ) {
-    return this.addressService.createAddress(createAddressDto, res);
+  async createAddress(@Body() createAddressDto: CreateAddressDto) {
+    return this.addressService.createAddress(createAddressDto);
   }
   @Patch(':id')
   async updateAddress(
     @Param('id') id: string,
     @Body() updateAddressDto: UpdateAddressDto,
     @Res() res: Response,
-  ){
+  ) {
     return this.addressService.updateAddress(id, updateAddressDto, res);
   }
   @Delete(':id')
-  async deleteAddress(@Param('id') id: string): Promise<Address> {
-    return this.addressService.deleteAddress(id);
+  async deleteAddress(@Param('id') id: string, @Res() res: Response) {
+    return this.addressService.deleteAddress(id, res);
   }
 }

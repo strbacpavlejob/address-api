@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { NotFoundExceptionFilter } from './filters/entity-not-found-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +11,7 @@ async function bootstrap() {
       disableErrorMessages: true,
     }),
   );
+  app.useGlobalFilters(new NotFoundExceptionFilter());
   app.enableCors();
   await app.listen(3000);
 }

@@ -6,6 +6,7 @@ import { CreateAddressDto } from './dto/create-address.dto';
 import * as Validator from 'class-validator';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { Response, response } from 'express';
+import { ApiResponse } from 'src/misc/api.response';
 
 @Injectable()
 export class AddressService {
@@ -15,9 +16,11 @@ export class AddressService {
     return new Promise((resolve) => {
       this.addressRepository
         .findOne({ _id })
-        .then((data) => resolve(data))
+        .then((data) => res.send(data))
         .catch((error) => {
-          return res.status(404).send();
+          return res
+            .status(404)
+            .send(new ApiResponse('error', 404, 'Address not found'));
         });
     });
   }
@@ -26,27 +29,20 @@ export class AddressService {
     return this.addressRepository.find({});
   }
 
-  async createAddress(newAddress: CreateAddressDto, res: Response) {
-    return Validator.validate(newAddress)
-      .then(async () => {
-        const addres: Address = await this.addressRepository.create({
-          country: newAddress.country,
-          city: newAddress.city,
-          street: newAddress.street,
-          postalcode: newAddress.postalcode,
-          number: newAddress.number,
-          numberAddition: newAddress.numberAddition,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          status: null,
-          name: null,
-          email: null,
-        });
-        res.send(addres);
-      })
-      .catch(() => {
-        return res.status(422).send();
-      });
+  async createAddress(newAddress: CreateAddressDto) {
+    return this.addressRepository.create({
+      country: newAddress.country,
+      city: newAddress.city,
+      street: newAddress.street,
+      postalcode: newAddress.postalcode,
+      number: newAddress.number,
+      numberAddition: newAddress.numberAddition,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: null,
+      name: null,
+      email: null,
+    });
   }
 
   async updateAddress(
@@ -54,17 +50,59 @@ export class AddressService {
     addressUpdates: UpdateAddressDto,
     res: Response,
   ) {
+    this.addressRepository
+      .findOne({ _id })
+      .then((data) => {
+        if (data.status === 'not interested' || data.status === 'interested') {
+          return res
+            .status(403)
+            .send(
+              new ApiResponse(
+                'error',
+                403,
+                'Status is either not interested or interested',
+              ),
+            );
+        }
+      })
+      .catch(() => {
+        return res
+          .status(404)
+          .send(new ApiResponse('error', 404, 'Address not found'));
+      });
+
     return new Promise((resolve) => {
-      this.addressRepository
-        .findOneAndUpdate({ _id }, addressUpdates)
-        .then((data) => resolve(data))
+      return this.addressRepository
+        .findOneAndUpdate({ _id }, { ...addressUpdates, updatedAt: new Date() })
+        .then((data) => {
+          return res.send(data);
+        })
         .catch((error) => {
-          return res.status(404).send();
+          return res
+            .status(404)
+            .send(new ApiResponse('error', 404, 'Address not found'));
         });
     });
   }
 
-  async deleteAddress(_id: string) {
-    return this.addressRepository.findOneAndDelete({ _id });
+  async deleteAddress(_id: string, res: Response) {
+    this.addressRepository
+      .findOne({ _id })
+      .then()
+      .catch(() => {
+        return res
+          .status(404)
+          .send(new ApiResponse('error', 404, 'Address not found'));
+      });
+    return new Promise((resolve) => {
+      this.addressRepository
+        .findOneAndDelete({ _id })
+        .then(() => res.status(204).send())
+        .catch((error) => {
+          return res
+            .status(409)
+            .send(new ApiResponse('error', 409, 'Address not deleted'));
+        });
+    });
   }
 }
